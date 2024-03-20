@@ -11,7 +11,7 @@ contract WomboComboFactory is Level {
         WomboToken token = new WomboToken("Staking", "STK", 100 * 10 ** 18);
         WomboToken reward = new WomboToken("Reward", "RWD", 100_000_000 * 10 ** 18);
 
-        Forwarder forwarder = new Forwarder();
+        WomboForwarder forwarder = new WomboForwarder();
 
         Staking staking = new Staking(token, reward, address(forwarder));
 

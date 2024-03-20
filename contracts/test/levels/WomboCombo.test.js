@@ -1,7 +1,7 @@
 const WomboComboFactory = artifacts.require('./levels/WomboComboFactory.sol');
 const Staking = artifacts.require('./levels/Staking.sol');
 const WomboToken = artifacts.require('WomboToken');
-const Forwarder = artifacts.require('Forwarder');
+const WomboForwarder = artifacts.require('WomboForwarder');
 
 const Ethernaut = artifacts.require('./Ethernaut.sol');
 const {
@@ -12,6 +12,7 @@ const {
 } = require('openzeppelin-test-helpers');
 const utils = require('../utils/TestUtils');
 const { ethers, upgrades } = require('hardhat');
+const ethSigUtil = require('eth-sig-util');
 
 
 contract('WomboCombo', function (accounts) {
@@ -28,22 +29,9 @@ contract('WomboCombo', function (accounts) {
     { name: 'verifyingContract', type: 'address' },
     { name: 'salt', type: 'bytes32' },
   ];
-  
-  async function getDomain(contract) {
-    const { fields, name, version, chainId, verifyingContract, salt, extensions } = await contract.eip712Domain();
-  
-    if (extensions.length > 0) {
-      throw Error('Extensions not implemented');
-    }
-  
-    const domain = { name, version, chainId, verifyingContract, salt };
-    for (const [i, { name }] of EIP712Domain.entries()) {
-      if (!(fields & (1 << i))) {
-        delete domain[name];
-      }
-    }
-  
-    return domain;
+
+  function domainType(domain) {
+    return EIP712Domain.filter(({ name }) => domain[name] !== undefined);
   }
 
   before(async function () {
@@ -64,10 +52,10 @@ contract('WomboCombo', function (accounts) {
     // Init checks
     let stakingTokenAddress = await instance.stakingToken();
     let rewardTokenAddress = await instance.rewardsToken();
-    let forwarderAddress = await instance.rewardsToken();
+    let forwarderAddress = await instance.forwarder();
     const stakingToken = new WomboToken(stakingTokenAddress);
     const rewardToken = new WomboToken(rewardTokenAddress);
-    const forwarder = new Forwarder(forwarderAddress);
+    const forwarder = new WomboForwarder(forwarderAddress);
 
     assert.notEqual(await instance.owner(), ethers.constants.AddressZero);
     assert.equal(await stakingToken.balanceOf(player), 100 * 10 ** 18);
@@ -109,7 +97,7 @@ contract('WomboCombo', function (accounts) {
     );
 
     const req = {
-      from: player.address,
+      from: player,
       to: instance.address,
       value: '0',
       gas: '1000000',
@@ -118,28 +106,51 @@ contract('WomboCombo', function (accounts) {
       data,
     };
 
-    const domain = await getDomain(forwarder);
-    // const types = {
-    //   EIP712Domain: domainType(domain),
-    //   ForwardRequest: [
-    //     { name: 'from', type: 'address' },
-    //     { name: 'to', type: 'address' },
-    //     { name: 'value', type: 'uint256' },
-    //     { name: 'gas', type: 'uint256' },
-    //     { name: 'nonce', type: 'uint256' },
-    //     { name: 'deadline', type: 'uint256' },
-    //     { name: 'data', type: 'bytes' },
-    //   ],
-    // };
+    // EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)
 
-    // const signature = await ethSigUtil.signTypedMessage(player.getPrivateKey(), {
-    //   data: {
-    //     types: types,
-    //     domain: domain,
-    //     primaryType: 'ForwardRequest',
-    //     message: req,
-    //   },
-    // });
+    const domain = await forwarder.DOMAIN_SEPARATOR();
+    const types = {
+      EIP712Domain: [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' },
+      ],
+      ForwardRequest: [
+        { name: 'from', type: 'address' },
+        { name: 'to', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'gas', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' },
+        { name: 'data', type: 'bytes' },
+      ],
+    };
+
+    console.log( {
+      types: types,
+      domain: domain,
+      primaryType: 'ForwardRequest',
+      message: req,
+    })
+    // console.log(ethSigUtil.SignTypedDataVersion.V1)
+
+    const signature = await ethSigUtil.signTypedData({
+      privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      data: {
+        types: types,
+        domain: {
+          chainId: 1,
+          name: "Forwarder",
+          // salt?: ArrayBuffer,
+          verifyingContract: forwarderAddress,
+          version: "1"
+        },
+        primaryType: 'ForwardRequest',
+        message: req,
+      },
+      version: "V4",
+    });
 
     // expect(await this.forwarder.verify(req, signature)).to.equal(true);
 

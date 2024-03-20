@@ -12,6 +12,7 @@ contract Staking is Multicall, ERC2771Context {
     WomboToken public immutable rewardsToken;
 
     address public owner;
+    address public forwarder;
 
     uint256 public duration;
     uint256 public finishAt;
@@ -33,6 +34,7 @@ contract Staking is Multicall, ERC2771Context {
         owner = _msgSender();
         stakingToken = _stakingToken;
         rewardsToken = _rewardToken;
+        forwarder = _forwarder;
     }
 
     modifier onlyOwner() {
@@ -171,7 +173,7 @@ abstract contract EIP712WithNonce is EIP712 {
     }
 }
 
-contract Forwarder is EIP712WithNonce {
+contract WomboForwarder is EIP712WithNonce {
     struct ForwardRequest {
         address from;
         address to;
