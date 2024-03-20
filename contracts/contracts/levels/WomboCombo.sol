@@ -8,8 +8,8 @@ import {SignatureChecker} from "openzeppelin-contracts-08/utils/cryptography/Sig
 import {EIP712} from "openzeppelin-contracts-08/utils/cryptography/draft-EIP712.sol";
 
 contract Staking is Multicall, ERC2771Context {
-    Token public immutable stakingToken;
-    Token public immutable rewardsToken;
+    WomboToken public immutable stakingToken;
+    WomboToken public immutable rewardsToken;
 
     address public owner;
 
@@ -26,8 +26,8 @@ contract Staking is Multicall, ERC2771Context {
     uint256 public earnedTotal;
 
     constructor(
-        Token _stakingToken,
-        Token _rewardToken,
+        WomboToken _stakingToken,
+        WomboToken _rewardToken,
         address _forwarder
     ) ERC2771Context(_forwarder) {
         owner = _msgSender();
@@ -235,7 +235,7 @@ contract Forwarder is EIP712WithNonce {
     }
 }
 
-contract Token is ERC20 {
+contract WomboToken is ERC20 {
     constructor(
         string memory _name,
         string memory _symbol,

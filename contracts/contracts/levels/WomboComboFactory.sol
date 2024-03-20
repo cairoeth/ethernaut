@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 import "./base/Level.sol";
 import "./WomboCombo.sol";
 
-contract DummyFactory is Level {
+contract WomboComboFactory is Level {
     function createInstance(
         address _player
     ) public payable override returns (address) {
-        Token token = new Token("Staking", "STK", 100 * 10 ** 18);
-        Token reward = new Token("Reward", "RWD", 100_000_000 * 10 ** 18);
+        WomboToken token = new WomboToken("Staking", "STK", 100 * 10 ** 18);
+        WomboToken reward = new WomboToken("Reward", "RWD", 100_000_000 * 10 ** 18);
 
         Forwarder forwarder = new Forwarder();
 
